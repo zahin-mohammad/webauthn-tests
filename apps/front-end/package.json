@@ -12,18 +12,19 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf .next"
   },
   "dependencies": {
+    "@example/logger": "workspace:*",
+    "@example/tsconfig": "workspace:*",
+    "@example/utils": "workspace:*",
+    "@simplewebauthn/browser": "^10.0.0",
     "@types/node": "18.15.0",
     "@types/react": "18.0.28",
     "@types/react-dom": "18.0.11",
     "eslint": "8.36.0",
+    "eslint-config-example": "workspace:*",
     "eslint-config-next": "13.2.4",
     "next": "13.2.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "typescript": "4.9.5",
-    "@example/logger": "workspace:*",
-    "@example/tsconfig": "workspace:*",
-    "@example/utils": "workspace:*",
-    "eslint-config-example": "workspace:*"
+    "typescript": "4.9.5"
   }
 }
