@@ -23,7 +23,7 @@ const uri = 'mongodb://root:root@localhost:27017'
 const client = new MongoClient(uri)
 const db = client.db('test')
 
-const hmacSalt = 123
+const hmacSalt = 'myhmacsalt'
 
 type Authenticator = Required<VerifiedRegistrationResponse>['registrationInfo']
 
@@ -82,6 +82,12 @@ app.post('/generate-registration-options', async (req, res) => {
       },
       extensions: {
         hmacCreateSecret: true,
+        // @ts-ignore
+        prf: {
+          eval: {
+            first: hmacSalt,
+          },
+        },
       },
     }
 
@@ -172,7 +178,7 @@ app.post('/verify-registration', async (req, res) => {
 
 app.post('/get-challange', async (req, res) => {
   try {
-    const { username, userVerification } = req.body
+    const { username, userVerification, usePrfExtension } = req.body
 
     const user = await userCollection.findOne({ username })
 
@@ -189,13 +195,25 @@ app.post('/get-challange', async (req, res) => {
           id: a.credentialID,
         }
       }),
-      userVerification: userVerification ? 'required' : 'preferred',
+      userVerification: userVerification ? 'required' : 'discouraged',
       extensions: {
         // @ts-ignore
         hmacGetSecret: {
           salt1: hmacSalt,
         },
       },
+    }
+
+    if (usePrfExtension) {
+      opts.extensions = {
+        ...opts.extensions,
+        // @ts-ignore
+        prf: {
+          eval: {
+            first: hmacSalt,
+          },
+        },
+      }
     }
 
     const options = await generateAuthenticationOptions(opts)

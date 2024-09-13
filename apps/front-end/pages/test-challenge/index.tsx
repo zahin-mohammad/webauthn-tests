@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable react/button-has-type */
 import { useRouter } from 'next/router'
@@ -15,6 +16,7 @@ function UserPage() {
   const router = useRouter()
   const { username } = router.query
   const [userVerification, setUserVerification] = useState(false)
+  const [usePrfExtension, setUsePrfExtension] = useState(false)
   const [authResult, setAuthResult] = useState('')
 
   const handleGetChallenge = async () => {
@@ -27,27 +29,63 @@ function UserPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, userVerification }),
+        body: JSON.stringify({ username, userVerification, usePrfExtension }),
       })
 
       if (response.status !== 200) {
         throw new Error('Failed to get challenge')
       }
-      let options = await response.json()
+      const options = await response.json()
 
-      options = {
-        ...options,
-        extensions: {
-          hmacGetSecret: {
-            salt1: stringToArrayBuffer(
-              options.extensions.hmacGetSecret.salt1.toString()
-            ),
+      // options = {
+      //   ...options,
+      //   extensions: {
+      //     ...options.extensions,
+      //     hmacGetSecret: {
+      //       salt1: stringToArrayBuffer(
+      //         options.extensions.hmacGetSecret.salt1.toString()
+      //       ),
+      //     },
+      //     prf: {
+      //       eval: {
+      //         first: Buffer.from(options.extensions.prf.eval.first, 'base64'),
+      //       },
+      //     },
+      //   },
+      // }
+
+      if (options.extensions.hmacGetSecret) {
+        options.extensions.hmacGetSecret = {
+          salt1: stringToArrayBuffer(
+            options.extensions.hmacGetSecret.salt1.toString()
+          ),
+        }
+      }
+
+      if (options.extensions.prf) {
+        options.extensions.prf = {
+          eval: {
+            first: Buffer.from(options.extensions.prf.eval.first, 'base64'),
           },
-        },
+        }
       }
       console.log(options)
       // Use WebAuthn API to start authentication
       const authResponse = await startAuthentication(options)
+      console.log(authResponse)
+
+      // @ts-ignore
+      if (authResponse.clientExtensionResults.prf) {
+        // @ts-ignore
+        authResponse.clientExtensionResults.prf = {
+          results: {
+            first: Buffer.from(
+              // @ts-ignore
+              authResponse.clientExtensionResults.prf.results.first
+            ).toString('base64'),
+          },
+        }
+      }
 
       // Set the authentication result
       setAuthResult(JSON.stringify(authResponse, null, 2))
@@ -67,6 +105,15 @@ function UserPage() {
           type="checkbox"
           checked={userVerification}
           onChange={(e) => setUserVerification(e.target.checked)}
+        />
+      </div>
+      <div>
+        <label htmlFor="usePrf">Request PRF Extension:</label>
+        <input
+          id="usePrf"
+          type="checkbox"
+          checked={usePrfExtension}
+          onChange={(e) => setUsePrfExtension(e.target.checked)}
         />
       </div>
       <button onClick={handleGetChallenge}>Get Challenge</button>

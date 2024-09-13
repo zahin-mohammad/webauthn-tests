@@ -3,6 +3,13 @@ import { FormEventHandler, useState } from 'react'
 import { useRouter } from 'next/router'
 import { startRegistration } from '@simplewebauthn/browser'
 
+// Convert a string to an ArrayBuffer for the hmacGetSecret extension input
+const stringToArrayBuffer = (str: string): ArrayBuffer => {
+  const encoder = new TextEncoder()
+
+  return encoder.encode(str).buffer
+}
+
 function Signup() {
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -26,7 +33,19 @@ function Signup() {
 
     console.log('response', response)
 
-    const options = await response.json()
+    let options = await response.json()
+
+    options = {
+      ...options,
+      extensions: {
+        ...options.extensions,
+        prf: {
+          eval: {
+            first: Buffer.from(options.extensions.prf.eval.first, 'base64'),
+          },
+        },
+      },
+    }
     console.log(options)
     const credential = await startRegistration(options)
     console.log(credential)
